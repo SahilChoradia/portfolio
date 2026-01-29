@@ -8,12 +8,20 @@ import { GoogleGenerativeAI } from '@google/generative-ai'
 // Lock to officially supported model
 const MODEL_NAME = 'gemini-1.5-flash'
 
-// Validate API key on module load - fail fast if missing
-if (!process.env.GEMINI_API_KEY) {
-  throw new Error('CRITICAL: GEMINI_API_KEY environment variable is required. Application cannot start without it.')
-}
+// Lazy-load Gemini client to avoid build-time errors
+let genAI: GoogleGenerativeAI | null = null
 
-const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY)
+function getGeminiClient(): GoogleGenerativeAI {
+  if (!process.env.GEMINI_API_KEY) {
+    throw new Error('GEMINI_API_KEY environment variable is required for reel analysis.')
+  }
+  
+  if (!genAI) {
+    genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY)
+  }
+  
+  return genAI
+}
 
 export interface GeminiAnalysis {
   topic: string
@@ -40,7 +48,8 @@ export async function analyzeReelContent(
   hashtags: string[]
 ): Promise<GeminiAnalysis> {
   try {
-    const model = genAI.getGenerativeModel({ model: MODEL_NAME })
+    const client = getGeminiClient()
+    const model = client.getGenerativeModel({ model: MODEL_NAME })
 
     const prompt = `Analyze this Instagram reel content and return ONLY valid JSON (no markdown, no code blocks):
 
@@ -124,7 +133,8 @@ export async function discoverCompetitors(
   originalUsername: string
 ): Promise<Competitor[]> {
   try {
-    const model = genAI.getGenerativeModel({ model: MODEL_NAME })
+    const client = getGeminiClient()
+    const model = client.getGenerativeModel({ model: MODEL_NAME })
 
     // Generate search queries from keywords
     const searchQueries = keywords.slice(0, 5).map(keyword => 
