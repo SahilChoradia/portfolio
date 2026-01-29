@@ -3,14 +3,15 @@ import { Profile } from './models'
 import { getYouTubeVideos } from './models'
 import { getInstagramPosts } from './models'
 
-const openai = new OpenAI({
-  apiKey: process.env.OPENAI_API_KEY,
-})
-
 export async function generateProfile(): Promise<Profile> {
   if (!process.env.OPENAI_API_KEY) {
     throw new Error('OPENAI_API_KEY is not set')
   }
+
+  // Lazy-load OpenAI client to avoid build-time errors
+  const openai = new OpenAI({
+    apiKey: process.env.OPENAI_API_KEY,
+  })
 
   try {
     // Fetch current content

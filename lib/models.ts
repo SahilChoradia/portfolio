@@ -152,8 +152,9 @@ export async function updateMessageStatus(id: string, status: 'new' | 'read'): P
   const collection = db.collection<ContactMessage>('contact_messages')
   
   const { ObjectId } = await import('mongodb')
+  const objectId = new ObjectId(id)
   await collection.updateOne(
-    { _id: new ObjectId(id) },
+    { _id: objectId } as any,
     { $set: { status } }
   )
 }
@@ -164,7 +165,8 @@ export async function deleteContactMessage(id: string): Promise<void> {
   const collection = db.collection<ContactMessage>('contact_messages')
   
   const { ObjectId } = await import('mongodb')
-  await collection.deleteOne({ _id: new ObjectId(id) })
+  const objectId = new ObjectId(id)
+  await collection.deleteOne({ _id: objectId } as any)
 }
 
 // Removed all playlist and channel caching logic - no longer needed

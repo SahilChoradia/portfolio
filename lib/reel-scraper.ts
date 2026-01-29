@@ -124,7 +124,7 @@ export async function scrapeReelMetadata(reelUrl: string): Promise<ReelMetadata>
         const html = await htmlResponse.text()
         
         // Try to extract JSON-LD or meta tags
-        const jsonLdMatch = html.match(/<script type="application\/ld\+json">(.*?)<\/script>/s)
+        const jsonLdMatch = html.match(/<script type="application\/ld\+json">([\s\S]*?)<\/script>/)
         if (jsonLdMatch) {
           try {
             const jsonLd = JSON.parse(jsonLdMatch[1])
