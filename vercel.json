@@ -6,7 +6,7 @@
     },
     {
       "path": "/api/cron/profile",
-      "schedule": "0 */12 * * *"
+      "schedule": "0 2 * * *"
     }
   ]
 }
