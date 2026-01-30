@@ -3,11 +3,13 @@ import { YouTubeVideo } from './models'
 // HARDCODED CHANNEL ID: Just Peggy
 const TRUSTED_CHANNEL_ID = 'UCDryEWPwjZFKL3CtAyqsxDA'
 
-const YOUTUBE_API_KEY = process.env.YOUTUBE_API_KEY
-
-// MANDATORY SECURITY CHECK: Fail fast if YOUTUBE_API_KEY is missing
-if (!YOUTUBE_API_KEY) {
-  throw new Error('CRITICAL: YOUTUBE_API_KEY environment variable is required. Application cannot start without it.')
+// Lazy-load API key to avoid build-time errors
+function getYouTubeApiKey(): string {
+  const apiKey = process.env.YOUTUBE_API_KEY
+  if (!apiKey) {
+    throw new Error('CRITICAL: YOUTUBE_API_KEY environment variable is required. Application cannot start without it.')
+  }
+  return apiKey
 }
 
 /**
@@ -43,15 +45,12 @@ export interface YouTubeFetchResult {
 }
 
 export async function fetchYouTubeVideos(): Promise<YouTubeFetchResult> {
+  // Get API key when function is called (lazy-load)
+  const YOUTUBE_API_KEY = getYouTubeApiKey()
+  
   console.log(`[YouTube] ========== Starting YouTube fetch ==========`)
   console.log(`[YouTube] TRUSTED_CHANNEL_ID: ${TRUSTED_CHANNEL_ID}`)
   console.log(`[YouTube] YOUTUBE_API_KEY: ${YOUTUBE_API_KEY ? '[SET]' : '[NOT SET]'}`)
-
-  if (!YOUTUBE_API_KEY) {
-    const error = 'YOUTUBE_API_KEY is not set'
-    console.error(`[YouTube] ${error}`)
-    throw new Error(error)
-  }
 
   const debug: YouTubeFetchResult['debug'] = {
     channelId: TRUSTED_CHANNEL_ID,
