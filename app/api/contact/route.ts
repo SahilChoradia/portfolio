@@ -1,6 +1,6 @@
 import { NextResponse } from 'next/server'
 import { z } from 'zod'
-import { saveContactMessage } from '@/lib/models'
+import { prisma } from '@/lib/db'
 
 export const dynamic = 'force-dynamic'
 
@@ -12,6 +12,19 @@ const contactSchema = z.object({
 
 export async function POST(request: Request) {
   try {
+    // Validate DATABASE_URL is set
+    if (!process.env.DATABASE_URL && !process.env.MONGODB_URI) {
+      console.error('[CONTACT_API_ERROR] DATABASE_URL or MONGODB_URI is not set')
+      return NextResponse.json(
+        { 
+          success: false,
+          error: 'Server configuration error',
+          message: 'Database connection is not configured'
+        },
+        { status: 500 }
+      )
+    }
+
     // Safely parse request body
     let body: any
     try {
@@ -83,16 +96,19 @@ export async function POST(request: Request) {
       )
     }
 
-    // Save to database - AWAIT and handle errors properly
+    // Save to database using Prisma - AWAIT and handle errors properly
+    let savedMessage
     try {
-      const savedMessage = await saveContactMessage({
-        name,
-        contactInfo,
-        message,
-        status: 'new',
+      savedMessage = await prisma.contactMessage.create({
+        data: {
+          name,
+          contactInfo,
+          message,
+          status: 'new',
+        },
       })
       console.log('[CONTACT_API] Message saved successfully:', {
-        id: savedMessage._id,
+        id: savedMessage.id,
         name: savedMessage.name,
       })
     } catch (dbError: any) {
@@ -100,7 +116,10 @@ export async function POST(request: Request) {
         error: dbError.message,
         stack: dbError.stack,
         name: dbError.name,
+        code: dbError.code,
       })
+      
+      // NEVER return success on failure
       return NextResponse.json(
         { 
           success: false,
