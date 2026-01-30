@@ -2,6 +2,8 @@ import { NextResponse } from 'next/server'
 import { getYouTubeVideos } from '@/lib/models'
 import { fetchYouTubeVideos } from '@/lib/youtube'
 
+export const dynamic = 'force-dynamic'
+
 // HARDCODED CHANNEL ID: Just Peggy
 const TRUSTED_CHANNEL_ID = 'UCDryEWPwjZFKL3CtAyqsxDA'
 

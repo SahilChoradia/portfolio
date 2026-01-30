@@ -1,8 +1,9 @@
 import { NextResponse } from 'next/server'
 import { getProfile, saveProfile } from '@/lib/models'
-import { getServerSession } from 'next-auth'
-import { authOptions } from '@/lib/auth'
+import { isAuthenticated } from '@/lib/auth-utils'
 import { z } from 'zod'
+
+export const dynamic = 'force-dynamic'
 
 const profileSchema = z.object({
   bio: z.string(),
@@ -24,9 +25,10 @@ export async function GET() {
 }
 
 export async function PUT(request: Request) {
-  const session = await getServerSession(authOptions)
+  const authenticated = await isAuthenticated()
   
-  if (!session) {
+  if (!authenticated) {
+    console.error('[PROFILE_PUT] Unauthorized access attempt')
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
   }
 

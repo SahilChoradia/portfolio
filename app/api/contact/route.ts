@@ -2,6 +2,8 @@ import { NextResponse } from 'next/server'
 import { z } from 'zod'
 import { saveContactMessage } from '@/lib/models'
 
+export const dynamic = 'force-dynamic'
+
 const contactSchema = z.object({
   name: z.string().min(2, 'Name must be at least 2 characters').max(100, 'Name must be less than 100 characters'),
   contactInfo: z.string().min(3, 'Contact info must be at least 3 characters').max(100, 'Contact info must be less than 100 characters'),
@@ -81,17 +83,24 @@ export async function POST(request: Request) {
       )
     }
 
-    // Save to database
+    // Save to database - AWAIT and handle errors properly
     try {
-      await saveContactMessage({
+      const savedMessage = await saveContactMessage({
         name,
         contactInfo,
         message,
         status: 'new',
       })
-      console.log('[CONTACT_API] Message saved successfully')
+      console.log('[CONTACT_API] Message saved successfully:', {
+        id: savedMessage._id,
+        name: savedMessage.name,
+      })
     } catch (dbError: any) {
-      console.error('[CONTACT_API_ERROR] Database save failed:', dbError)
+      console.error('[CONTACT_API_ERROR] Database save failed:', {
+        error: dbError.message,
+        stack: dbError.stack,
+        name: dbError.name,
+      })
       return NextResponse.json(
         { 
           success: false,

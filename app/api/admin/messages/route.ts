@@ -1,7 +1,16 @@
 import { NextResponse } from 'next/server'
+import { isAuthenticated } from '@/lib/auth-utils'
 import { getContactMessages, updateMessageStatus, deleteContactMessage } from '@/lib/models'
 
+export const dynamic = 'force-dynamic'
+
 export async function GET() {
+  const authenticated = await isAuthenticated()
+  
+  if (!authenticated) {
+    console.error('[ADMIN_MESSAGES] Unauthorized access attempt')
+    return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+  }
   try {
     const messages = await getContactMessages(100)
     
@@ -30,6 +39,13 @@ export async function GET() {
 }
 
 export async function PATCH(request: Request) {
+  const authenticated = await isAuthenticated()
+  
+  if (!authenticated) {
+    console.error('[ADMIN_MESSAGES] Unauthorized access attempt')
+    return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+  }
+
   try {
     // Safely parse request body
     let body: any
@@ -88,6 +104,13 @@ export async function PATCH(request: Request) {
 }
 
 export async function DELETE(request: Request) {
+  const authenticated = await isAuthenticated()
+  
+  if (!authenticated) {
+    console.error('[ADMIN_MESSAGES] Unauthorized access attempt')
+    return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+  }
+
   try {
     const { searchParams } = new URL(request.url)
     const id = searchParams.get('id')

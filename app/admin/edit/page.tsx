@@ -1,16 +1,15 @@
 'use client'
 
-import { useSession } from 'next-auth/react'
 import { useRouter } from 'next/navigation'
 import { useEffect, useState } from 'react'
 import { motion } from 'framer-motion'
 
 export default function EditProfile() {
-  const { data: session, status } = useSession()
   const router = useRouter()
-  const [loading, setLoading] = useState(false)
+  const [loading, setLoading] = useState(true)
   const [saving, setSaving] = useState(false)
   const [message, setMessage] = useState('')
+  const [authenticated, setAuthenticated] = useState(false)
   const [profile, setProfile] = useState({
     bio: '',
     tagline: '',
@@ -20,16 +19,26 @@ export default function EditProfile() {
   const [newSkill, setNewSkill] = useState('')
 
   useEffect(() => {
-    if (status === 'unauthenticated') {
-      router.push('/admin/login')
+    // Check authentication by trying to fetch a protected resource
+    const checkAuth = async () => {
+      try {
+        const res = await fetch('/api/sync/logs')
+        if (res.ok) {
+          setAuthenticated(true)
+          fetchProfile()
+        } else {
+          router.push('/admin/login')
+        }
+      } catch (error) {
+        console.error('Auth check failed:', error)
+        router.push('/admin/login')
+      } finally {
+        setLoading(false)
+      }
     }
-  }, [status, router])
-
-  useEffect(() => {
-    if (session) {
-      fetchProfile()
-    }
-  }, [session])
+    
+    checkAuth()
+  }, [router])
 
   const fetchProfile = async () => {
     try {
@@ -92,7 +101,7 @@ export default function EditProfile() {
     })
   }
 
-  if (status === 'loading' || loading) {
+  if (loading) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-background">
         <div className="text-textMuted">Loading...</div>
@@ -100,7 +109,7 @@ export default function EditProfile() {
     )
   }
 
-  if (!session) {
+  if (!authenticated) {
     return null
   }
 

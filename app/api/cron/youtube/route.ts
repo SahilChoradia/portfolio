@@ -2,6 +2,8 @@ import { NextResponse } from 'next/server'
 import { fetchYouTubeVideos } from '@/lib/youtube'
 import { saveYouTubeVideos, addSyncLog } from '@/lib/models'
 
+export const dynamic = 'force-dynamic'
+
 export async function GET(request: Request) {
   const authHeader = request.headers.get('authorization')
   

@@ -2,6 +2,8 @@ import { NextResponse } from 'next/server'
 import { generateProfile } from '@/lib/ai-profile'
 import { saveProfile, addSyncLog } from '@/lib/models'
 
+export const dynamic = 'force-dynamic'
+
 export async function GET(request: Request) {
   const authHeader = request.headers.get('authorization')
   

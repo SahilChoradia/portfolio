@@ -1,13 +1,15 @@
 import { NextResponse } from 'next/server'
-import { getServerSession } from 'next-auth'
+import { isAuthenticated } from '@/lib/auth-utils'
 import { fetchYouTubeVideos } from '@/lib/youtube'
 import { saveYouTubeVideos, addSyncLog } from '@/lib/models'
-import { authOptions } from '@/lib/auth'
+
+export const dynamic = 'force-dynamic'
 
 export async function POST() {
-  const session = await getServerSession(authOptions)
+  const authenticated = await isAuthenticated()
   
-  if (!session) {
+  if (!authenticated) {
+    console.error('[SYNC_YOUTUBE] Unauthorized access attempt')
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
   }
 

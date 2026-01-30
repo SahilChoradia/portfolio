@@ -2,6 +2,8 @@ import { NextResponse } from 'next/server'
 import { getInstagramPosts } from '@/lib/instagram'
 import { getInstagramPosts as getDBPosts } from '@/lib/models'
 
+export const dynamic = 'force-dynamic'
+
 export async function GET() {
   try {
     // Get posts from config (primary source)

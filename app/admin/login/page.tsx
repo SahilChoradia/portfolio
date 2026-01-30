@@ -1,7 +1,6 @@
 'use client'
 
 import { useState } from 'react'
-import { signIn } from 'next-auth/react'
 import { useRouter } from 'next/navigation'
 import { motion } from 'framer-motion'
 
@@ -18,19 +17,27 @@ export default function AdminLogin() {
     setLoading(true)
 
     try {
-      const result = await signIn('credentials', {
-        email,
-        password,
-        redirect: false,
+      const response = await fetch('/api/admin/login', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ email, password }),
       })
 
-      if (result?.error) {
-        setError('Invalid credentials')
+      const data = await response.json()
+
+      if (!response.ok) {
+        setError(data.message || 'Invalid credentials')
+        console.error('[ADMIN_LOGIN] Login failed:', data)
       } else {
+        // Success - redirect to admin panel
         router.push('/admin')
+        router.refresh() // Force refresh to update layout auth check
       }
-    } catch (err) {
-      setError('Something went wrong')
+    } catch (err: any) {
+      console.error('[ADMIN_LOGIN] Network error:', err)
+      setError('Network error. Please try again.')
     } finally {
       setLoading(false)
     }
