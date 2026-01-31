@@ -22,17 +22,32 @@ const globalForMongo = globalThis as unknown as {
 // STEP 1: GET DATABASE URL
 // ============================================
 function getDatabaseUrl(): string {
-  // Use DATABASE_URL or fallback to MONGODB_URI for compatibility
-  const DATABASE_URL = process.env.DATABASE_URL || process.env.MONGODB_URI
+  // Primary: Use MONGO_URI (required for production)
+  // Fallback: MONGODB_URI (for backward compatibility in development)
+  const MONGO_URI = process.env.MONGO_URI
+  const MONGODB_URI = process.env.MONGODB_URI
   
-  if (!DATABASE_URL) {
-    throw new Error(
-      'CRITICAL: DATABASE_URL or MONGODB_URI environment variable is required. ' +
-      'Application cannot start without it.'
-    )
+  if (MONGO_URI) {
+    return MONGO_URI
   }
   
-  return DATABASE_URL
+  // Backward compatibility: allow MONGODB_URI in development
+  if (MONGODB_URI) {
+    if (process.env.NODE_ENV === 'production') {
+      console.warn('[MONGODB] WARNING: Using MONGODB_URI fallback in production. Please migrate to MONGO_URI.')
+    } else {
+      console.warn('[MONGODB] WARNING: Using MONGODB_URI fallback. Please update your .env.local to use MONGO_URI instead.')
+    }
+    return MONGODB_URI
+  }
+  
+  // No valid URI found - throw error
+  throw new Error(
+    'CRITICAL: MONGO_URI environment variable is required. ' +
+    'Application cannot start without it. ' +
+    'Please set MONGO_URI in your environment variables. ' +
+    '(MONGODB_URI is deprecated and only works in development)'
+  )
 }
 
 // ============================================

@@ -3,11 +3,21 @@
  * This will throw errors on server startup if required env vars are missing
  */
 
+// MONGO_URI is required, but we allow MONGODB_URI as fallback in development
 const requiredEnvVars = [
-  'MONGODB_URI',
   'ADMIN_EMAIL',
   'ADMIN_PASSWORD',
 ] as const
+
+// Check MongoDB URI separately with fallback support
+function checkMongoUri() {
+  if (!process.env.MONGO_URI && !process.env.MONGODB_URI) {
+    throw new Error('CRITICAL: MONGO_URI (or MONGODB_URI) environment variable is required')
+  }
+  if (process.env.MONGODB_URI && !process.env.MONGO_URI) {
+    console.warn('WARNING: Using deprecated MONGODB_URI. Please migrate to MONGO_URI for production.')
+  }
+}
 
 const optionalEnvVars = [
   'NEXTAUTH_URL',
@@ -23,6 +33,13 @@ const optionalEnvVars = [
 export function validateEnvironmentVariables() {
   const missing: string[] = []
   const warnings: string[] = []
+
+  // Check MongoDB URI separately (with fallback support)
+  try {
+    checkMongoUri()
+  } catch (error: any) {
+    missing.push('MONGO_URI (or MONGODB_URI)')
+  }
 
   // Check required variables
   for (const envVar of requiredEnvVars) {

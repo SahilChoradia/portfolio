@@ -26,15 +26,19 @@ export async function POST(request: Request) {
     // STEP 2: HARD FAIL ON MISCONFIGURATION
     // ============================================
     console.log(`[CONTACT_API:${requestId}] Checking environment variables...`)
-    const hasDatabaseUrl = !!process.env.DATABASE_URL
-    const hasMongoDbUri = !!process.env.MONGODB_URI
-    console.log(`[CONTACT_API:${requestId}] DATABASE_URL present: ${hasDatabaseUrl}`)
-    console.log(`[CONTACT_API:${requestId}] MONGODB_URI present: ${hasMongoDbUri}`)
+    const hasMongoUri = !!process.env.MONGO_URI
+    const hasMongodbUri = !!process.env.MONGODB_URI
+    console.log(`[CONTACT_API:${requestId}] MONGO_URI present: ${hasMongoUri}`)
+    console.log(`[CONTACT_API:${requestId}] MONGODB_URI present: ${hasMongodbUri}`)
     
-    if (!hasDatabaseUrl && !hasMongoDbUri) {
-      const errorMsg = 'CRITICAL: DATABASE_URL or MONGODB_URI environment variable is missing'
+    if (!hasMongoUri && !hasMongodbUri) {
+      const errorMsg = 'CRITICAL: MONGO_URI (or MONGODB_URI) environment variable is missing'
       console.error(`[CONTACT_API_ERROR:${requestId}] ${errorMsg}`)
       throw new Error(errorMsg)
+    }
+    
+    if (!hasMongoUri && hasMongodbUri) {
+      console.warn(`[CONTACT_API:${requestId}] WARNING: Using deprecated MONGODB_URI. Please migrate to MONGO_URI.`)
     }
     
     // ============================================

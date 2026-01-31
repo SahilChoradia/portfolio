@@ -3,7 +3,11 @@ require('dotenv').config({ path: '.env.local' })
 const { MongoClient } = require('mongodb')
 
 async function seed() {
-  const client = new MongoClient(process.env.MONGODB_URI)
+  const mongoUri = process.env.MONGO_URI || process.env.MONGODB_URI
+  if (!mongoUri) {
+    throw new Error('CRITICAL: MONGO_URI environment variable is required')
+  }
+  const client = new MongoClient(mongoUri)
   
   try {
     await client.connect()
