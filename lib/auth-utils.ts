@@ -43,3 +43,5 @@ export function validateAdminCredentials(email: string, password: string): boole
   return password === adminPassword
 }
 
+
+

@@ -22,7 +22,6 @@ export default function Navbar() {
     { href: '#youtube', label: 'YouTube' },
     { href: '#instagram', label: 'Instagram' },
     { href: '#contact', label: 'Contact' },
-    { href: '/admin', label: 'Admin' },
   ]
 
   return (

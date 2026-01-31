@@ -4,12 +4,11 @@
   "private": true,
   "scripts": {
     "dev": "next dev",
-    "build": "prisma generate && next build",
+    "build": "next build",
     "start": "next start",
     "lint": "next lint",
     "setup": "node scripts/setup-env.js",
-    "seed": "node scripts/seed.js",
-    "postinstall": "prisma generate"
+    "seed": "node scripts/seed.js"
   },
   "dependencies": {
     "@google/generative-ai": "^0.24.1",
@@ -21,11 +20,9 @@
     "next-auth": "^4.24.5",
     "nodemailer": "^7.0.7",
     "openai": "^4.20.1",
-    "prisma": "^5.7.1",
     "react": "^18.2.0",
     "react-dom": "^18.2.0",
     "react-icons": "^4.12.0",
-    "@prisma/client": "^5.7.1",
     "zod": "^3.22.4"
   },
   "devDependencies": {

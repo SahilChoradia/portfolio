@@ -1,57 +1,100 @@
 import { MongoClient } from 'mongodb'
 
-// Lazy-load MongoDB connection to avoid build-time errors
-let client: MongoClient
-let clientPromise: Promise<MongoClient> | null = null
+/**
+ * MongoDB Client Singleton Pattern for Next.js App Router + Vercel
+ * 
+ * CRITICAL: In serverless environments (Vercel), each function invocation
+ * can create a new MongoClient instance, leading to connection exhaustion.
+ * 
+ * Solution: Use globalThis to cache the MongoClient instance across
+ * all serverless function invocations on the same container.
+ * 
+ * This ensures only ONE connection is created and reused across all requests.
+ */
 
-function initializeClient(): Promise<MongoClient> {
-  // Validate environment variable when actually needed
-  if (!process.env.MONGODB_URI) {
-    throw new Error('CRITICAL: MONGODB_URI environment variable is required. Application cannot start without it.')
-  }
-
-  // Return existing promise if already initialized
-  if (clientPromise) {
-    return clientPromise
-  }
-
-  // Use DATABASE_URL as alias for MONGODB_URI if provided
-  const DATABASE_URL = process.env.DATABASE_URL || process.env.MONGODB_URI
-  const uri: string = DATABASE_URL
-
-  if (process.env.NODE_ENV === 'development') {
-    let globalWithMongo = global as typeof globalThis & {
-      _mongoClientPromise?: Promise<MongoClient>
-    }
-
-    if (!globalWithMongo._mongoClientPromise) {
-      client = new MongoClient(uri)
-      globalWithMongo._mongoClientPromise = client.connect()
-    }
-    clientPromise = globalWithMongo._mongoClientPromise
-  } else {
-    client = new MongoClient(uri)
-    clientPromise = client.connect()
-  }
-
-  return clientPromise
+// Type-safe globalThis access
+const globalForMongo = globalThis as unknown as {
+  _mongoClient?: MongoClient
+  _mongoClientPromise?: Promise<MongoClient>
 }
 
-// Export a promise-like object that initializes on first await/then
-const clientPromiseGetter: Promise<MongoClient> = {
-  then: (onFulfilled, onRejected) => {
-    return initializeClient().then(onFulfilled, onRejected)
-  },
-  catch: (onRejected) => {
-    return initializeClient().catch(onRejected)
-  },
-  finally: (onFinally) => {
-    return initializeClient().finally(onFinally)
-  },
-  [Symbol.toStringTag]: 'Promise'
-} as Promise<MongoClient>
+// ============================================
+// STEP 1: GET DATABASE URL
+// ============================================
+function getDatabaseUrl(): string {
+  // Use DATABASE_URL or fallback to MONGODB_URI for compatibility
+  const DATABASE_URL = process.env.DATABASE_URL || process.env.MONGODB_URI
+  
+  if (!DATABASE_URL) {
+    throw new Error(
+      'CRITICAL: DATABASE_URL or MONGODB_URI environment variable is required. ' +
+      'Application cannot start without it.'
+    )
+  }
+  
+  return DATABASE_URL
+}
 
-export default clientPromiseGetter
+// ============================================
+// STEP 2: CREATE OR REUSE MONGO CLIENT
+// ============================================
+function getMongoClient(): Promise<MongoClient> {
+  // Check if client already exists in globalThis (cached from previous invocation)
+  if (globalForMongo._mongoClientPromise) {
+    console.log('[MONGODB] Reusing existing MongoClient from globalThis')
+    return globalForMongo._mongoClientPromise
+  }
+
+  console.log('[MONGODB] Creating new MongoClient instance...')
+  
+  // Get database URL
+  const uri = getDatabaseUrl()
+  
+  // Create new MongoClient
+  const client = new MongoClient(uri, {
+    // Connection pool settings for production
+    maxPoolSize: 10, // Maximum number of connections in the pool
+    minPoolSize: 1, // Minimum number of connections in the pool
+    maxIdleTimeMS: 30000, // Close connections after 30 seconds of inactivity
+    serverSelectionTimeoutMS: 5000, // How long to try selecting a server
+    socketTimeoutMS: 45000, // How long to wait for a socket connection
+  })
+
+  // Connect and cache the promise in globalThis
+  globalForMongo._mongoClientPromise = client.connect().then((connectedClient) => {
+    console.log('[MONGODB] MongoClient connected successfully')
+    globalForMongo._mongoClient = connectedClient
+    return connectedClient
+  }).catch((error) => {
+    // Clear the promise on error so we can retry
+    globalForMongo._mongoClientPromise = undefined
+    console.error('[MONGODB_ERROR] Failed to connect:', error)
+    throw error
+  })
+
+  return globalForMongo._mongoClientPromise
+}
+
+// ============================================
+// STEP 3: EXPORT CLIENT PROMISE
+// ============================================
+// Export a promise that resolves to the MongoClient
+// This ensures only ONE connection is created and reused
+const clientPromise = getMongoClient()
+
+export default clientPromise
+
+// ============================================
+// STEP 4: EXPORT HELPER FUNCTION
+// ============================================
+/**
+ * Get MongoDB database instance
+ * @param dbName Optional database name (defaults to database name in connection string)
+ */
+export async function getDatabase(dbName?: string) {
+  const client = await clientPromise
+  return client.db(dbName)
+}
 
 
 
